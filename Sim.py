@@ -1,12 +1,35 @@
+import numpy
+import threading
+
+# Going to use lanes like queues at the grocery store
+# Traffic light will be like the clerk
+# Service time will reflect time car is accelerating into intersection
+# Intersection itself is another queuing system that is event based
+# Queue waiting at light will be object based on the cars waiting
+# Cars entering the intersection will then create arrival/departure events 
+# After car completes its turn it leaves the system entirely
+# So there are object based queues for the lanes waiting to enter the intersection
+# Within the intersection there are events to track the movement of the cars
+# Time spent in intersection will be added to the service time from accelerating
+#
+# First sim will be cars moving straight through a one way light with no turns
+
 class Car:
-    def __init__(self, lane, turn, time):
-        self.direction = lane
+    def __init__(self, direction, turn, time):
         self.turn = turn
+        self.direction = direction
         self.time = time
+
+    def __str__(self):
+        return f'Car(Time: {self.time}, Turn: {self.turn})'
+    
+    def __repr__(self):
+        return str(self)
         
 class Lights:
-    def __init__(self, traversals):
+    def __init__(self, traversals, lanes):
         self.traversals = traversals
+        self.lanes = lanes
         
     #returns a boolean given a turn to check if that turn can be made
     # Examples
@@ -20,22 +43,28 @@ class Lights:
         
         
 class Lane:
-    cardinals ={
-        0 : 'North',
-        1 : 'East',
-        2 : 'South',
-        3 : 'West'
-    }
-    
-    turningLanes = {
-        0 : 'Straight and Right',
-        1 : 'Straight and Left'
-    }
-    
-    def __init__(self, turnsAllowed, direction):
+    def __init__(self, direction, turnsAllowed):
         self.turnsAllowed = turnsAllowed
         self.direction = direction
         self.queue = []
+        self.waiting = 0
+
+    def __str__(self):
+        return f'{self.queue}'
+    
+
+    def addCar(self, car):
+        self.queue.append(car)
+        self.waiting += 1
+
+    def getFirst(self):
+        self.waiting -= 1
+        return self.queue.pop(0)
+    
+    def isEmpty(self):
+        return self.waiting == 0
+        
+
         
 class Event:
     #_type is dep or arr
@@ -46,4 +75,3 @@ class Event:
         self.time = time
         self.lane = lane
         self.straight = straight
-    
