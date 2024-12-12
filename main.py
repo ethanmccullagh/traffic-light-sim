@@ -1,6 +1,8 @@
 import numpy
-import threading
+from threading import Thread, Lock
+import random
 from Sim import Car, Lane, Event, Lights
+import time
 
 NORTH = 0
 EAST = 1
@@ -14,38 +16,50 @@ LEFT = 2
 STRAIGHT_RIGHT = 3
 STRAIGHT_LEFT = 4
 
+random.seed(10)
 
+def populate(cars, lanes):
+    while len(cars) > 0 and cars[0].time <= clock:
+        car = cars.pop(0)
+        for i in range(0, len(lanes)):
+            if car.direction == lanes[i].direction:
+                lanes[i].addCar(car)
+                print(f'ARRIVED @ {clock}: {car}')
+   
 
-#create lanes
+def simLights(lanes, departed):
 
+    for lane in lanes:
+        while lane.waiting > 0:
+            departed.append(lane.pop())
+            print(f'DEPARTED @ {clock}:  {departed[len(departed)-1]}')
+                    
+southToNorth = Lane(NORTH, STRAIGHT)
 westToEast = Lane(EAST, STRAIGHT)
+northToSouth = Lane(SOUTH, STRAIGHT)
 eastToWest = Lane(WEST, STRAIGHT)
 
-print(westToEast.direction)
-print(eastToWest.isEmpty())
+cars = []
 
-car1 = Car(EAST, STRAIGHT, 1)
-car2 = Car(WEST, STRAIGHT, 2)
-car3 = Car(WEST, STRAIGHT, 3)
-car4 = Car(EAST, STRAIGHT, 4)
+for i in range(1, 11):
+    cars.append(Car(random.randrange(0, 4), STRAIGHT, i))
 
-cars = [car1, car2, car3, car4]
+
+lanes = [southToNorth, westToEast, northToSouth, eastToWest]
 departed = []
+numCars = len(cars)
+GreenLight = 0
+clock = 1
 
-clock = 0
+while len(departed) < numCars :
 
-while len(cars) > 0:
 
-    if cars[0].time >= clock:
-        #add to lane
-        if cars[0].direction == EAST:
-            westToEast.addCar(cars.pop(0))
+    populate(cars, lanes)
 
-        elif cars[0].direction == WEST:
-            eastToWest.addCar(cars.pop(0))
-
-    clock +=1 
-
-print(clock)
-print(westToEast)
-print(eastToWest)
+    simLights([lanes[GreenLight], lanes[GreenLight+2]], departed)
+    
+    clock += 1
+    if clock % 4 == 0:
+        GreenLight = (GreenLight + 1) % 2
+        print('----LIGHT CHANGE----')
+    

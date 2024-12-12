@@ -14,6 +14,17 @@ import threading
 #
 # First sim will be cars moving straight through a one way light with no turns
 
+cardinals = {
+    0 : 'North',
+    1 : 'East',
+    2 : 'South',
+    3 : 'West'
+}
+
+turns = {
+    0 : 'Straight'
+}
+
 class Car:
     def __init__(self, direction, turn, time):
         self.turn = turn
@@ -21,7 +32,7 @@ class Car:
         self.time = time
 
     def __str__(self):
-        return f'Car(Time: {self.time}, Turn: {self.turn})'
+        return f'Car(Time: {self.time}, Direction: {cardinals[self.direction]} Turn: {turns[self.turn]})'
     
     def __repr__(self):
         return str(self)
@@ -57,9 +68,12 @@ class Lane:
         self.queue.append(car)
         self.waiting += 1
 
-    def getFirst(self):
+    def pop(self):
         self.waiting -= 1
         return self.queue.pop(0)
+    
+    def time(self):
+        return self.queue[0].time
     
     def isEmpty(self):
         return self.waiting == 0
