@@ -26,14 +26,13 @@ turns = {
 }
 
 class Car:
-    def __init__(self, direction, turn, time):
+    def __init__(self, direction, turn, time, service):
         self.turn = turn
         self.direction = direction
         self.time = time
         self.dep = False
-        
+        self.service = service
 
-        
     def __str__(self):
         if self.dep :return  f'Car {self.id} (Arrived: {self.time}, Departed: {self.departTime}, Direction: {cardinals[self.direction]}, Turn: {turns[self.turn]})'
         return f'Car {self.id} (Arrived: {self.time}, Direction: {cardinals[self.direction]}, Turn: {turns[self.turn]})'
@@ -55,8 +54,7 @@ class Lights:
         
     def addCar(self, car):
         carDirection = car.direction
-        lane = self.lanes[carDirection]
-        lane.addCar(car)
+        self.lanes[carDirection].addCar(car)
 
         print(f'ARRIVED  : {car}')
     
@@ -65,13 +63,39 @@ class Lights:
         curLanes = [self.lanes[self.GreenLight], self.lanes[self.GreenLight + 2]]
         
         for i in curLanes:
-            while i.waiting > 0 and i.peek() < nextLight:
+            while i.waiting > 0 :
+                car = i.peek()
+                serviceTime = time + car.service
+                if serviceTime >= nextLight: break
+                
                 car = i.pop()
-                car.departTime(time)
+                car.departTime(serviceTime)
                 departed.append(car)
                 print(f'DEPARTED : {car}')
                 
-        return departed
+    def nextDep(self):
+        
+        l1 = self.lanes[self.GreenLight]
+        l2 = self.lanes[self.GreenLight+2]
+        len1 = l1.waiting
+        len2 = l2.waiting
+        
+        if len1 == 0 and len2 == 0:
+            return None
+        
+        if len1 > 0:
+            r1 = l1.peek().time + l1.peek().service
+            if len2 == 0 : return r1
+            
+        if len2 > 0:
+            r2 = l2.peek().time + l2.peek().service
+            if len1 == 0: return r2
+        
+        if r1 < r2: return r1
+        
+        return r2
+        
+            
                 
         
     
@@ -110,8 +134,8 @@ class Lane:
         return self.queue.pop(0)
     
     def peek(self):
-        if len(self.queue) == 0: return -1
-        return self.queue[0].time
+        if len(self.queue) == 0: return []
+        return self.queue[0]
     
     def isEmpty(self):
         return self.waiting == 0
