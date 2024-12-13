@@ -46,71 +46,6 @@ class Car:
         
     def setID(self, id):
         self.id = id
-        
-class Lights:
-    def __init__(self, lanes):
-        self.lanes = lanes
-        self.GreenLight = 0
-        
-    def addCar(self, car):
-        carDirection = car.direction
-        self.lanes[carDirection].addCar(car)
-
-        print(f'ARRIVED  : {car}')
-    
-    def simLights(self, nextLight, time, departed):
-        
-        curLanes = [self.lanes[self.GreenLight], self.lanes[self.GreenLight + 2]]
-        
-        for i in curLanes:
-            while i.waiting > 0 :
-                car = i.peek()
-                serviceTime = time + car.service
-                if serviceTime >= nextLight: break
-                
-                car = i.pop()
-                car.departTime(serviceTime)
-                departed.append(car)
-                print(f'DEPARTED : {car}')
-                
-    def nextDep(self):
-        
-        l1 = self.lanes[self.GreenLight]
-        l2 = self.lanes[self.GreenLight+2]
-        len1 = l1.waiting
-        len2 = l2.waiting
-        
-        if len1 == 0 and len2 == 0:
-            return None
-        
-        if len1 > 0:
-            r1 = l1.peek().time + l1.peek().service
-            if len2 == 0 : return r1
-            
-        if len2 > 0:
-            r2 = l2.peek().time + l2.peek().service
-            if len1 == 0: return r2
-        
-        if r1 < r2: return r1
-        
-        return r2
-        
-            
-                
-        
-    
-    def setGreen(self, grn):
-        self.GreenLight = grn
-        
-        
-    #returns a boolean given a turn to check if that turn can be made
-    # Examples
-    # Turning right on a red light, traffic for lane being turned into must be clear within intersection
-    # Turning left, Oncoming traffic going straight for both lanes must be clear. 
-    #       Cars from the oncoming lanes that are turning can be ignored
-    # So different rules for right turns and left turns. Straight throughs dont need to be checked
-    def isTurnClear(srcDir, direction):
-        pass
     
         
         
@@ -140,14 +75,28 @@ class Lane:
     def isEmpty(self):
         return self.waiting == 0
         
+class EventList:
+    def __init__(self):
+        self.events = []
+
+    def add(self, event):
+        self.events.append(event)
+        self.events.sort(key=lambda x : x.time)
+
+    def pop(self):
+        if len(self.events) == 0 : return None
+        return self.events.pop(0)
+    
+    def peek(self):
+        if len(self.events) == 0 : return None
+        return self.events[0]
 
         
 class Event:
     #_type is dep or arr
     #used to track cars entering and leaving the intersection
     #lane is the lane the car came from
-    def __init__(self, _type, time, lane, straight):
+    def __init__(self, _type, time, car):
         self._type = _type
         self.time = time
-        self.lane = lane
-        self.straight = straight
+        self.car = car

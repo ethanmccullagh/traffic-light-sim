@@ -1,7 +1,7 @@
 import numpy
 from threading import Thread, Lock
 import random
-from Sim import Car, Lane, Event, Lights
+from Sim import Car, Lane, Event, EventList
 import time
 
 NORTH = 0
@@ -29,7 +29,7 @@ westToEast = Lane(EAST, STRAIGHT)
 northToSouth = Lane(SOUTH, STRAIGHT)
 eastToWest = Lane(WEST, STRAIGHT)
 lanes = [southToNorth, westToEast, northToSouth, eastToWest]
-fourWayLights = Lights(lanes)
+
 
 cars = []
 for i in range(1, 16):
@@ -43,28 +43,63 @@ for i in range(0, len(cars)):
 lightInterval = 4
 nextLightChange = lightInterval
 
-    
-    
+eventList = EventList()
+
+def scheduleArrival(car):
+    global eventList
+
+    lanes[car.direction].addCar(car)
+
+    event = Event(0, car.time, car)
+    eventList.add(event)
+
+def scheduleDeparture(lane):
+    global eventList
+    car = lane.peek()
+
+    curTime = car.time
+    if clock > car.time: curTime = clock
+
+    if curTime + car.service > nextLightChange: return
+
+    lane.pop()
+
+    car.departTime(curTime + car.service)
+
+    event = Event(1, curTime + car.service, car)
+    eventList.add(event)
+
+def processEvent(event):
+    if event._type == 0:
+        print(f'ARRIVAL   {event.time} {event.car}')
+
+    else:
+        print(f'DEPARTURE {event.time} {event.car}')
+        departed.append(event.car)
 
 
 #main loop that runs each light cycle
 while len(departed) < numCars:
-    if len(cars) == 0: fourWayLights.simLights(nextLightChange, clock, departed)
-    
-    #loop that adds the cars arriving on this light cycle
+
+   
+    #get the cars that will arrive before next light change, add them to the lane and create event
     while len(cars) > 0 and cars[0].time < nextLightChange:
-        car = cars.pop(0)
-        clock = car.time
-        
-        fourWayLights.addCar(car)
-        # if the next car gets here before this car can leave, skip the sim
-        if len(cars) > 0 and cars[0].time > (car.time + car.service):
-            fourWayLights.simLights(nextLightChange, clock, departed)
+        scheduleArrival(cars.pop(0))
+
+    #schedule departures for active lanes
+    for lane in [lanes[GreenLight], lanes[GreenLight + 2]]:
+        while lane.waiting > 0:
+            scheduleDeparture(lane)
+
+    #print events for this light cycle
+    while eventList.peek():
+        processEvent(eventList.pop())
+
 
     clock = nextLightChange
     nextLightChange += lightInterval
     GreenLight = (GreenLight + 1) % 2
-    fourWayLights.setGreen(GreenLight)
+
     if(len(departed) == numCars):
         print('----END----')
         break
