@@ -23,7 +23,8 @@ cardinals = {
 
 turns = {
     0 : 'Straight',
-    1 : 'Right'
+    1 : 'Right',
+    2 : 'Left'
 }
 
 class Car:
@@ -33,6 +34,7 @@ class Car:
         self.time = time
         self.dep = False
         self.service = service
+        self.accel = time
 
     def __str__(self):
         if self.dep :return  f'Car {self.id} (Arrived: {self.time}, Started: {self.accel}, Departed: {self.departTime}, Direction: {cardinals[self.direction]}, Turn: {turns[self.turn]})'
@@ -75,7 +77,7 @@ class Lane:
         for tr in self.traversals:
             if tr.isConflict(time, duration):
                 if tr.time >= time and (tr.time + tr.duration + duration) < lightChange and not self.isBusy(tr.time + tr.duration, duration):
-                    return tr.time + tr.duration + duration
+                    return tr.time + tr.duration
         print(self.traversals)
         return None
 

@@ -25,16 +25,16 @@ clock = 0
 GreenLight = 0
 departed = []
 
-southToNorth = Lane(NORTH, STRAIGHT_RIGHT)
-westToEast = Lane(EAST, STRAIGHT_RIGHT)
-northToSouth = Lane(SOUTH, STRAIGHT_RIGHT)
-eastToWest = Lane(WEST, STRAIGHT_RIGHT)
+southToNorth = Lane(NORTH, STRAIGHT_RIGHT_LEFT)
+westToEast = Lane(EAST, STRAIGHT_RIGHT_LEFT)
+northToSouth = Lane(SOUTH, STRAIGHT_RIGHT_LEFT)
+eastToWest = Lane(WEST, STRAIGHT_RIGHT_LEFT)
 lanes = [southToNorth, westToEast, northToSouth, eastToWest]
 
 
 cars = []
 for i in range(1, 20):
-    cars.append(Car(random.randrange(0, 4), random.choice([0,1]), random.randrange(1, 12), SERVICE_TIME))
+    cars.append(Car(random.randrange(0, 4), random.randrange(0, 3), random.randrange(1, 12), SERVICE_TIME))
 numCars = len(cars)
 cars.sort(key=lambda a : a.time)
 
@@ -58,12 +58,23 @@ def scheduleArrival(car):
 def scheduleDeparture(lane):
     global eventList
     car = lane.peek()
+    curTime = car.time
+
+    if clock > car.time: curTime = clock
+
+    if curTime + car.service > nextLightChange: return
+
+    #print('schedule', car)
 
     if lane.turnsAllowed(car.turn):
-        curTime = car.time
-        if clock > car.time: curTime = clock
+        if car.turn == LEFT:
+            turnTime = turnAllowed(car)
 
-        if curTime + car.service > nextLightChange: return
+            if not turnTime: print('left not allowed')
+
+            if turnTime < curTime: turnTime = curTime + car.service
+
+            car.departTime(turnTime + car.service)
 
         lane.pop()
 
@@ -75,20 +86,21 @@ def scheduleDeparture(lane):
         eventList.add(event)
     else :
         print('Error wrong turn assignment')
+        exit()
 
 def scheduleRightTurnOnRed(lane):
     global eventList
     car = lane.peek()
 
     turnTime = turnAllowed(car)
-    print(turnTime, car)
+    #print(turnTime, car)
 
     if not turnTime: return False
 
-    car.departTime(turnTime )
+    car.departTime(turnTime + car.service)
 
-    if car.turn == RIGHT: 
-        scheduleDeparture(lane)
+    
+    scheduleDeparture(lane)
 
     return True
 
@@ -106,10 +118,17 @@ def turnAllowed(car):
 
     if car.turn == RIGHT:
         destLane = lanes[(car.direction + 1) % 4]
-        if destLane.isBusy(car.time, car.service):   
-            return destLane.nextWindow(car.time, car.service, nextLightChange)
+        
+        
+    if car.turn == LEFT:
+        destLane = lanes[(car.direction + 2) % 4]
 
-    return car.time + car.service
+    if destLane.isBusy(car.time, car.service):   
+        print('busy', car)
+        return destLane.nextWindow(car.time, car.service, nextLightChange)
+    return car.time 
+
+    
 
 
 
