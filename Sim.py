@@ -138,6 +138,6 @@ class Traversal:
     def isConflict(self, time, duration):
         if self.time <= time and time < (self.time + self.duration):
             return True
-        if self.time <= (time + duration) and (time + duration) <= (self.time + self.duration):
+        if self.time < (time + duration) and (time + duration) <= (self.time + self.duration):
             return True
         return False

@@ -19,7 +19,7 @@ STRAIGHT_RIGHT_LEFT = lambda x : x >= 0 and x <= 2
 
 SERVICE_TIME = 0.5
 
-random.seed(10)
+random.seed(11)
 
 clock = 0
 GreenLight = 0
@@ -68,17 +68,21 @@ def scheduleDeparture(lane):
 
     if lane.turnsAllowed(car.turn):
         if car.turn == LEFT:
+            if car.accel< curTime: car.accel = curTime
             turnTime = turnAllowed(car)
 
-            if not turnTime: print('left not allowed')
+            if not turnTime:
+                print('turn not allowed', car)
+                return None
 
-            if turnTime < curTime: turnTime = curTime + car.service
+
+            if turnTime < curTime: turnTime = curTime 
 
             car.departTime(turnTime + car.service)
 
         lane.pop()
 
-        if car.turn == STRAIGHT: lane.addTraversal(Traversal(curTime, car.service))
+        if STRAIGHT_LEFT(car.turn): lane.addTraversal(Traversal(curTime, car.service))
 
         if not car.dep: car.departTime(curTime + car.service)
 
@@ -87,6 +91,8 @@ def scheduleDeparture(lane):
     else :
         print('Error wrong turn assignment')
         exit()
+
+    return 1
 
 def scheduleRightTurnOnRed(lane):
     global eventList
@@ -123,10 +129,9 @@ def turnAllowed(car):
     if car.turn == LEFT:
         destLane = lanes[(car.direction + 2) % 4]
 
-    if destLane.isBusy(car.time, car.service):   
-        print('busy', car)
-        return destLane.nextWindow(car.time, car.service, nextLightChange)
-    return car.time 
+    if destLane.isBusy(car.accel, car.service):   
+        return destLane.nextWindow(car.accel, car.service, nextLightChange)
+    return car.accel 
 
     
 
@@ -152,7 +157,10 @@ while len(departed) < numCars:
     #schedule departures for active lanes
     for lane in [activeL1, activeL2]:
         while lane.waiting > 0:
-            scheduleDeparture(lane)
+            
+            if not scheduleDeparture(lane) : 
+                print('break')
+                break
 
     #schedule right turns for inactive lanes
     for lane in [inactiveL1, inactiveL2]:
@@ -176,5 +184,5 @@ while len(departed) < numCars:
         break
     
     
-for i in departed: print(i)
+#for i in departed: print(i)
     
