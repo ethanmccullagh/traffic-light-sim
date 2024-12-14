@@ -22,7 +22,8 @@ cardinals = {
 }
 
 turns = {
-    0 : 'Straight'
+    0 : 'Straight',
+    1 : 'Right'
 }
 
 class Car:
@@ -34,7 +35,7 @@ class Car:
         self.service = service
 
     def __str__(self):
-        if self.dep :return  f'Car {self.id} (Arrived: {self.time}, Departed: {self.departTime}, Direction: {cardinals[self.direction]}, Turn: {turns[self.turn]})'
+        if self.dep :return  f'Car {self.id} (Arrived: {self.time}, Started: {self.accel}, Departed: {self.departTime}, Direction: {cardinals[self.direction]}, Turn: {turns[self.turn]})'
         return f'Car {self.id} (Arrived: {self.time}, Direction: {cardinals[self.direction]}, Turn: {turns[self.turn]})'
     
     def __repr__(self):
@@ -43,6 +44,7 @@ class Car:
     def departTime(self, time):
         self.dep = True
         self.departTime = time
+        self.accel = time - self.service
         
     def setID(self, id):
         self.id = id
@@ -55,9 +57,28 @@ class Lane:
         self.direction = direction
         self.queue = []
         self.waiting = 0
+        self.traversals = []
 
     def __str__(self):
         return f'{self.queue}'
+    
+    def addTraversal(self, traversal):
+        self.traversals.append(traversal)
+
+    def isBusy(self, time, duration):
+        for tr in self.traversals:
+            if tr.isConflict(time, duration):
+                return True
+        return False
+    
+    def nextWindow(self, time, duration, lightChange):
+        for tr in self.traversals:
+            if tr.isConflict(time, duration):
+                if tr.time >= time and (tr.time + tr.duration + duration) < lightChange and not self.isBusy(tr.time + tr.duration, duration):
+                    return tr.time + tr.duration + duration
+        print(self.traversals)
+        return None
+
     
 
     def addCar(self, car):
@@ -100,3 +121,21 @@ class Event:
         self._type = _type
         self.time = time
         self.car = car
+
+class Traversal:
+    def __init__(self, time, duration):
+        self.time = time
+        self.duration = duration
+
+    def __str__(self):
+        return f'time:{self.time}, duration:{self.duration}'
+    
+    def __repr__(self):
+        return str(self)
+
+    def isConflict(self, time, duration):
+        if self.time <= time and time < (self.time + self.duration):
+            return True
+        if self.time <= (time + duration) and (time + duration) <= (self.time + self.duration):
+            return True
+        return False
