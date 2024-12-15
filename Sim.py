@@ -28,13 +28,14 @@ turns = {
 }
 
 class Car:
-    def __init__(self, direction, turn, time, service):
+    def __init__(self, direction, turn, time, service, _id):
         self.turn = turn
         self.direction = direction
         self.time = time
         self.dep = False
         self.service = service
         self.accel = time
+        self.id = _id
 
     def __str__(self):
         if self.dep :return  f'Car {self.id} (Arrived: {self.time}, Started: {self.accel}, Departed: {self.departTime}, Direction: {cardinals[self.direction]}, Turn: {turns[self.turn]})'
@@ -43,13 +44,13 @@ class Car:
     def __repr__(self):
         return str(self)
     
-    def departTime(self, time):
+    def setDepartTime(self, time):
+        if self.dep: return None
         self.dep = True
         self.departTime = time
         self.accel = time - self.service
+        return 1
         
-    def setID(self, id):
-        self.id = id
     
         
         
@@ -63,6 +64,9 @@ class Lane:
 
     def __str__(self):
         return f'{self.queue}'
+    
+    def __repr__(self):
+        return str(self)
     
     def addTraversal(self, traversal):
         self.traversals.append(traversal)
@@ -78,7 +82,7 @@ class Lane:
             if tr.isConflict(time, duration):
                 if tr.time >= time and (tr.time + tr.duration + duration) <= lightChange and not self.isBusy(tr.time + tr.duration, duration):
                     return tr.time + tr.duration
-        print(self.traversals)
+        #print(self.traversals)
         return None
 
     
