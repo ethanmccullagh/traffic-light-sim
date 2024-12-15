@@ -25,15 +25,19 @@ clock = 0
 GreenLight = 0
 departed = []
 
-southToNorth = Lane(NORTH, STRAIGHT_RIGHT_LEFT)
-westToEast = Lane(EAST, STRAIGHT_RIGHT_LEFT)
-northToSouth = Lane(SOUTH, STRAIGHT_RIGHT_LEFT)
-eastToWest = Lane(WEST, STRAIGHT_RIGHT_LEFT)
-lanes = [southToNorth, westToEast, northToSouth, eastToWest]
+southToNorth = Lane(NORTH, STRAIGHT_RIGHT)
+westToEast = Lane(EAST, STRAIGHT_RIGHT)
+northToSouth = Lane(SOUTH, STRAIGHT_RIGHT)
+eastToWest = Lane(WEST, STRAIGHT_RIGHT)
+northLeft = Lane(NORTH, STRAIGHT_LEFT)
+eastLeft = Lane(EAST, STRAIGHT_LEFT)
+southLeft = Lane(SOUTH, STRAIGHT_LEFT)
+westLeft = Lane(WEST, STRAIGHT_LEFT)
+lanes = [southToNorth, westToEast, northToSouth, eastToWest, northLeft, eastLeft, southLeft, westLeft]
 
 
 cars = []
-for i in range(1, 20):
+for i in range(1, 21):
     cars.append(Car(random.randrange(0, 4), random.randrange(0, 3), random.randrange(1, 12), SERVICE_TIME))
 numCars = len(cars)
 cars.sort(key=lambda a : a.time)
@@ -50,21 +54,24 @@ eventList = EventList()
 def scheduleArrival(car):
     global eventList
 
-    lanes[car.direction].addCar(car)
+    if car.turn == LEFT:
+        lanes[car.direction + 4].addCar(car)
+    else:
+        lanes[car.direction].addCar(car)
 
     event = Event(0, car.time, car)
     eventList.add(event)
 
-def scheduleDeparture(lane):
+def scheduleDeparture(lane, drag):
     global eventList
     car = lane.peek()
     curTime = car.time
 
     if clock > car.time: curTime = clock
 
-    if curTime + car.service > nextLightChange: return
+    curTime += drag
 
-    #print('schedule', car)
+    if curTime + car.service > nextLightChange: return None
 
     if lane.turnsAllowed(car.turn):
         if car.turn == LEFT:
@@ -75,14 +82,14 @@ def scheduleDeparture(lane):
                 print('turn not allowed', car)
                 return None
 
-
-            if turnTime < curTime: turnTime = curTime 
+            if turnTime < curTime: turnTime = curTime
+            else: turnTime += drag
 
             car.departTime(turnTime + car.service)
 
         lane.pop()
 
-        if STRAIGHT_LEFT(car.turn): lane.addTraversal(Traversal(curTime, car.service))
+        if car.turn == STRAIGHT: lane.addTraversal(Traversal(curTime, car.service))
 
         if not car.dep: car.departTime(curTime + car.service)
 
@@ -99,14 +106,12 @@ def scheduleRightTurnOnRed(lane):
     car = lane.peek()
 
     turnTime = turnAllowed(car)
-    #print(turnTime, car)
 
     if not turnTime: return False
 
     car.departTime(turnTime + car.service)
 
-    
-    scheduleDeparture(lane)
+    scheduleDeparture(lane, 0)
 
     return True
 
@@ -124,13 +129,14 @@ def turnAllowed(car):
 
     if car.turn == RIGHT:
         destLane = lanes[(car.direction + 1) % 4]
-        
+        if destLane.isBusy(car.accel, car.service):   
+            return destLane.nextWindow(car.accel, car.service, nextLightChange)
         
     if car.turn == LEFT:
         destLane = lanes[(car.direction + 2) % 4]
-
-    if destLane.isBusy(car.accel, car.service):   
-        return destLane.nextWindow(car.accel, car.service, nextLightChange)
+        if destLane.isBusy(car.accel, car.service):   
+            return destLane.nextWindow(car.accel, car.service, nextLightChange)
+    
     return car.accel 
 
     
@@ -144,7 +150,9 @@ while len(departed) < numCars:
     else : print('----EAST/WEST----')
 
     activeL1 = lanes[GreenLight]
+    activeL1L = lanes[GreenLight + 4]
     activeL2 = lanes[GreenLight + 2]
+    activeL2L = lanes[GreenLight + 6]
     inactiveL1 = lanes[GreenLight + 1]
     inactiveL2 = lanes[(GreenLight + 3) % 4]
 
@@ -155,12 +163,15 @@ while len(departed) < numCars:
     
 
     #schedule departures for active lanes
-    for lane in [activeL1, activeL2]:
+    for lane in [activeL1, activeL2, activeL1L, activeL2L]:
+        drag = 0
         while lane.waiting > 0:
             
-            if not scheduleDeparture(lane) : 
+            if not scheduleDeparture(lane, drag) : 
                 print('break')
                 break
+
+          
 
     #schedule right turns for inactive lanes
     for lane in [inactiveL1, inactiveL2]:

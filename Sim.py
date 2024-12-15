@@ -76,7 +76,7 @@ class Lane:
     def nextWindow(self, time, duration, lightChange):
         for tr in self.traversals:
             if tr.isConflict(time, duration):
-                if tr.time >= time and (tr.time + tr.duration + duration) < lightChange and not self.isBusy(tr.time + tr.duration, duration):
+                if tr.time >= time and (tr.time + tr.duration + duration) <= lightChange and not self.isBusy(tr.time + tr.duration, duration):
                     return tr.time + tr.duration
         print(self.traversals)
         return None
