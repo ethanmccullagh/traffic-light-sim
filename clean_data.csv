@@ -1,10 +1,4 @@
-LOCATION:,,14 ST SW & 17 AV SW,,,,,,,,,,
-INTERSECTION ID:,708,,,,,,,,,,,
-STUDY DATE:,,2024-08-14,10223,,,7671,,,8485,,,6862
-,0.00264110339430696,0.668296977403893,0.3290619192018,0.129839655846695,0.713596662755834,0.156563681397471,0.000824985268120212,0.874484384207425,0.124690630524455,0.35412416205188,0.571116292626057,0.0747595453220635
-,27,6832,3364,996,5474,1201,7,7420,1058,2430,3919,513
- Start Time, North Left, North Straight, North Right, East Left, East Straight, East Right, South Left, South Straight, South Right, West Left, West Straight, West Right
-,,,,,,,,,,,,
+Start Time,North Left,North Straight,North Right,East Left,East Straight,East Right,South Left,South Straight,South Right,West Left,West Straight,West Right
 12:30,0,95,45,12,66,15,0,85,7,32,60,9
 12:45,0,89,50,14,89,14,0,118,22,31,59,14
 13:00,0,108,49,10,69,18,0,107,14,37,55,9
