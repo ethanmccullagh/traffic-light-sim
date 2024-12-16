@@ -2,6 +2,7 @@ import numpy
 import random
 from Sim import Car, Lane, Event, EventList, Traversal
 import math
+from parameters import params
 
 NORTH = 0
 EAST = 1
@@ -16,21 +17,33 @@ STRAIGHT_RIGHT = lambda x : x==0 or x==1
 STRAIGHT_LEFT = lambda x : x==0 or x==2
 STRAIGHT_RIGHT_LEFT = lambda x : x >= 0 and x <= 2
 
-SERVICE_TIME = 1/8
+#SIMULATION PARAMETERS
+#change these values to setup different scenarios
+#PRINT EVENTS will print a real time record of the simulation and all cars entering/leaving
+#NUM CARS is the number of cars that will enter over the course of the simulation
+#ARR_PER_HOUR is the arrival rate in cars per hour
+#SERVICE TIME is the time it takes a car to leave the intersection once they start moving
+## service time mainly effects how long cars have to wait to make right/left turns
+PRINT_EVENTS = params['PRINT_EVENTS']
+NUM_CARS = params['NUM_CARS']
+ARR_PER_HOUR = params['ARR_PER_HOUR']
+SERVICE_TIME = params['SERVICE_TIME']
+NUM_RUNS = params['NUM_RUNS']
+lightInterval = params['lightInterval']
+directionWeights = params['directionWeights']
 
-PRINT_EVENTS = False
 
-NUM_CARS = 550
-ARR_PER_HOUR = 550
-
-random.seed(11)
+random.seed(10)
 
 clock = 0
 departed = []
 waitingInLane = []
 
+#LIGHT CHANGE LOGIC
+#change these values to change the green light intervals
+# default is 36 second green for N/S and 24 second green for E/W
+# values are portions of a minute so 36 seconds = 0.6 minutes
 GreenLight = 0
-lightInterval = [0.6, 0.4]
 nextLightChange = lightInterval[GreenLight]
 
 southToNorth = Lane(NORTH, STRAIGHT_RIGHT)
@@ -50,7 +63,7 @@ def exponential(mean):
 meanInterArrivalTimeSeconds = 60/ARR_PER_HOUR
 
 directionPopulation = [NORTH, EAST, SOUTH, WEST]
-directionWeights = [0.3, 0.2, 0.3, 0.2]
+
 
 turnPopulation = [STRAIGHT, RIGHT, LEFT]
 turnWeights = {
@@ -60,7 +73,7 @@ turnWeights = {
     WEST : [0.57, 0.08, 0.35]
 }
 
-directionChoices = random.choices(directionPopulation, directionWeights, k=NUM_CARS)
+directionChoices = random.choices(directionPopulation, directionWeights, k=NUM_CARS*NUM_RUNS)
 
 def turnChoice(dir):
     turn = random.choices(turnPopulation, turnWeights[dir], k=1)
@@ -69,7 +82,7 @@ def turnChoice(dir):
 
 cars = []
 lastArrival = 0
-for i in range(NUM_CARS):
+for i in range(NUM_CARS*NUM_RUNS):
     nextArrival = lastArrival + exponential(meanInterArrivalTimeSeconds)
 
     cars.append(Car(directionChoices[i], turnChoice(directionChoices[i]), nextArrival, SERVICE_TIME, i+1))

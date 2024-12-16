@@ -1,7 +1,7 @@
-import numpy
 import random
 from Sim import Car, Lane, Event, EventList, Traversal
 import math
+from parameters import params
 
 NORTH = 0
 EAST = 1
@@ -16,21 +16,33 @@ STRAIGHT_RIGHT = lambda x : x==0 or x==1
 STRAIGHT_LEFT = lambda x : x==0 or x==2
 STRAIGHT_RIGHT_LEFT = lambda x : x >= 0 and x <= 2
 
-SERVICE_TIME = 1/8
+#SIMULATION PARAMETERS
+#change these values to setup different scenarios
+#PRINT EVENTS will print a real time record of the simulation and all cars entering/leaving
+#NUM CARS is the number of cars that will enter over the course of the simulation
+#ARR_PER_HOUR is the arrival rate in cars per hour
+#SERVICE TIME is the time it takes a car to leave the intersection once they start moving
+## service time mainly effects how long cars have to wait to make right/left turns
+PRINT_EVENTS = params['PRINT_EVENTS']
+NUM_CARS = params['NUM_CARS']
+ARR_PER_HOUR = params['ARR_PER_HOUR']
+SERVICE_TIME = params['SERVICE_TIME']
+NUM_RUNS = params['NUM_RUNS']
+lightInterval = params['lightInterval']
+directionWeights = params['directionWeights']
+instantSwitching = params['instantSwitching']
 
-PRINT_EVENTS = False
-
-NUM_CARS = 550
-ARR_PER_HOUR = 550
-
-random.seed(11)
+random.seed(10)
 
 clock = 0
 departed = []
 waitingInLane = []
 
+#LIGHT CHANGE LOGIC
+#change these values to change the green light intervals
+# default is 36 second green for N/S and 24 second green for E/W
+# values are portions of a minute so 36 seconds = 0.6 minutes
 GreenLight = 0
-lightInterval = [0.6, 0.4]
 nextLightChange = lightInterval[GreenLight]
 
 southToNorth = Lane(NORTH, STRAIGHT_RIGHT)
@@ -50,7 +62,7 @@ def exponential(mean):
 meanInterArrivalTimeSeconds = 60/ARR_PER_HOUR
 
 directionPopulation = [NORTH, EAST, SOUTH, WEST]
-directionWeights = [0.3, 0.2, 0.3, 0.2]
+
 
 turnPopulation = [STRAIGHT, RIGHT, LEFT]
 turnWeights = {
@@ -60,7 +72,7 @@ turnWeights = {
     WEST : [0.57, 0.08, 0.35]
 }
 
-directionChoices = random.choices(directionPopulation, directionWeights, k=NUM_CARS)
+directionChoices = random.choices(directionPopulation, directionWeights, k=NUM_CARS*NUM_RUNS)
 
 def turnChoice(dir):
     turn = random.choices(turnPopulation, turnWeights[dir], k=1)
@@ -69,7 +81,7 @@ def turnChoice(dir):
 
 cars = []
 lastArrival = 0
-for i in range(NUM_CARS):
+for i in range(NUM_CARS*NUM_RUNS):
     nextArrival = lastArrival + exponential(meanInterArrivalTimeSeconds)
 
     cars.append(Car(directionChoices[i], turnChoice(directionChoices[i]), nextArrival, SERVICE_TIME, i+1))
@@ -194,12 +206,17 @@ while len(departed) < NUM_CARS:
     activeL2 = lanes[GreenLight + 2]
     activeL2L = lanes[GreenLight + 6]
     inactiveL1 = lanes[GreenLight + 1]
+    inactiveL1L = lanes[GreenLight + 5]
     inactiveL2 = lanes[(GreenLight + 3) % 4]
+    inactiveL2L = lanes[(GreenLight + 3) % 4 + 4]
 
    
     #get the cars that will arrive before next light change, add them to the lane and create event
     while len(cars) > 0 and cars[0].time < nextLightChange:
-        scheduleArrival(cars.pop(0))
+        car = cars.pop(0)
+        scheduleArrival(car)
+        if instantSwitching and GreenLight == 0 and ((car.direction == EAST and STRAIGHT_LEFT(car.turn)) or (car.direction == WEST and STRAIGHT_LEFT(car.turn))):
+            nextLightChange = car.time + SERVICE_TIME
     
 
     #schedule departures for active lanes
@@ -215,18 +232,24 @@ while len(departed) < NUM_CARS:
 
     #print events for this light cycle
     while eventList.peek():
-        processEvent(eventList.pop(), PRINT_EVENTS)
+        evt = eventList.pop()
+        processEvent(evt, PRINT_EVENTS)
 
     activeL1.traversals =[]
     activeL2.traversals =[]
 
+    countWaiting()
 
     clock = nextLightChange
     
-    GreenLight = (GreenLight + 1) % 2
+    for lane in [inactiveL1, inactiveL2, inactiveL1L, inactiveL2L]:
+        if lane.waiting>0:
+            GreenLight = (GreenLight + 1) % 2
+            break
+
     nextLightChange += lightInterval[GreenLight]
 
-    countWaiting()
+    
 
     if PRINT_EVENTS and len(departed) == NUM_CARS:
         print('----END----')
